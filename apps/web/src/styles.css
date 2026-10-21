@@ -1,0 +1,20 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-50: #eef7f2;
+  --color-brand-100: #d7ece1;
+  --color-brand-400: #35976f;
+  --color-brand-500: #1f6f54;
+  --color-brand-600: #175944;
+  --color-brand-700: #124436;
+}
+
+@layer base {
+  body {
+    @apply bg-stone-100 text-stone-900 antialiased;
+  }
+  input,
+  select {
+    color-scheme: light;
+  }
+}

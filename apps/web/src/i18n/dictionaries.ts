@@ -1,0 +1,233 @@
+/**
+ * Bilingual UI dictionary. `en` defines the keys; `it` must keep the same set.
+ * Work in English while developing — flip DEFAULT_LANG to 'it' when shipping
+ * to the rifugio (the in-app toggle stays available either way).
+ */
+const DEFAULT_LANG: 'en' | 'it' = 'en'
+
+export const en = {
+  appName: 'Timbro Nuvolau',
+  loading: 'Loading…',
+  cancel: 'Cancel',
+  save: 'Save',
+  delete: 'Delete',
+  edit: 'Edit',
+  close: 'Close',
+  copy: 'Copy',
+  copied: 'Copied',
+  confirm: 'Confirm',
+  username: 'Username',
+  password: 'Password',
+  displayName: 'Name',
+  settings: 'Settings',
+  signOut: 'Sign out',
+  language: 'Language',
+  somethingWentWrong: 'Something went wrong. Try again.',
+  date: 'Date',
+  time: 'Time',
+
+  login: {
+    title: 'Sign in',
+    submit: 'Sign in',
+  },
+
+  errors: {
+    INVALID_CREDENTIALS: 'Wrong username or password.',
+    ACCOUNT_DISABLED: 'This account is deactivated. Ask the owner.',
+    FORBIDDEN: 'You are not allowed to do that.',
+    NOT_FOUND: 'Not found.',
+    CONFLICT: 'That username is already taken.',
+    FUTURE_TIME: 'That time is in the future.',
+    RUNNING_EXISTS: 'A timer is already running.',
+    RUNNING_MISSING: 'No timer is running.',
+    VALIDATION: 'Check the values you entered.',
+    WEAK_PASSWORD: 'Password must be at least 8 characters.',
+  } as Record<string, string>,
+
+  employee: {
+    startNow: 'Start working',
+    startedEarlier: 'Started earlier?',
+    startQuestion: 'When did you start?',
+    stop: 'Stop',
+    stopQuestion: 'When did you finish?',
+    running: 'Running',
+    startedAt: 'Started at',
+    addEntry: 'Log hours',
+    editEntry: 'Edit hours',
+    deleteEntryTitle: 'Delete these hours?',
+    deleteEntryBody: 'They will be removed from the month total.',
+    noEntries: 'No hours logged this month yet.',
+    monthTotal: 'Total',
+    decimalHours: 'decimal hours',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    manualEntry: 'manual',
+    timerEntry: 'timer',
+    ownerViewNote: 'Hours are read by the owner but can only be changed by you.',
+  },
+
+  owner: {
+    reportTab: 'Report',
+    employeesTab: 'Employees',
+    period: 'Period',
+    employeesFilter: 'Employees',
+    allActive: 'All active',
+    includeDeactivated: 'Include deactivated',
+    colName: 'Name',
+    colDays: 'Days',
+    colEntries: 'Entries',
+    colHours: 'Hours',
+    colDecimal: 'Decimal',
+    emptySummary: 'No employees match this selection.',
+    viewDays: 'View days',
+    hideDays: 'Hide days',
+    exportTotals: 'CSV · totals',
+    exportEntries: 'CSV · entries',
+    addEmployee: 'Add employee',
+    editEmployee: 'Edit employee',
+    resetPassword: 'Reset password',
+    resetConfirm:
+      'Give them a new password? Their current one stops working on every device.',
+    created: 'Added',
+    deactivate: 'Deactivate',
+    reactivate: 'Reactivate',
+    deactivateConfirm:
+      'Deactivate this account? They lose access, but their past hours stay in your reports.',
+    active: 'Active',
+    inactive: 'Deactivated',
+    ownerReadonly: 'You see everyone’s hours; only employees can change them.',
+    revealNote: 'This password is shown only once — send it to them now.',
+    shareIntro: 'Welcome to Timbro Nuvolau!',
+    shareHint: 'You can change your password in Settings after signing in.',
+  },
+
+  settingsPage: {
+    title: 'Settings',
+    profileTitle: 'Profile',
+    passwordTitle: 'Password',
+    currentPassword: 'Current password',
+    newPassword: 'New password (min. 8 characters)',
+    saved: 'Saved',
+    wrongCurrent: 'Current password is wrong.',
+    readonlyNote:
+      'As the owner you can view everyone’s hours, but entries can only be edited by the employee who logged them.',
+  },
+} as const
+
+/** Widens literal strings so the Italian dictionary only needs the same shape. */
+type Widen<T> = T extends string ? string : { [K in keyof T]: Widen<T[K]> }
+
+export type Dictionary = Widen<typeof en>
+
+export const it: Dictionary = {
+  appName: 'Timbro Nuvolau',
+  loading: 'Caricamento…',
+  cancel: 'Annulla',
+  save: 'Salva',
+  delete: 'Elimina',
+  edit: 'Modifica',
+  close: 'Chiudi',
+  copy: 'Copia',
+  copied: 'Copiato',
+  confirm: 'Conferma',
+  username: 'Nome utente',
+  password: 'Password',
+  displayName: 'Nome',
+  settings: 'Impostazioni',
+  signOut: 'Esci',
+  language: 'Lingua',
+  somethingWentWrong: 'Qualcosa è andato storto. Riprova.',
+  date: 'Data',
+  time: 'Ora',
+
+  login: {
+    title: 'Accedi',
+    submit: 'Accedi',
+  },
+
+  errors: {
+    INVALID_CREDENTIALS: 'Nome utente o password errati.',
+    ACCOUNT_DISABLED: 'Questo account è disattivato. Chiedi alla titolare.',
+    FORBIDDEN: 'Azione non consentita.',
+    NOT_FOUND: 'Non trovato.',
+    CONFLICT: 'Nome utente già in uso.',
+    FUTURE_TIME: 'L’orario è nel futuro.',
+    RUNNING_EXISTS: 'Il cronometro è già attivo.',
+    RUNNING_MISSING: 'Nessun cronometro attivo.',
+    VALIDATION: 'Controlla i valori inseriti.',
+    WEAK_PASSWORD: 'La password deve avere almeno 8 caratteri.',
+  } as Record<string, string>,
+
+  employee: {
+    startNow: 'Inizia a lavorare',
+    startedEarlier: 'È iniziato prima?',
+    startQuestion: 'A che ora hai iniziato?',
+    stop: 'Ferma',
+    stopQuestion: 'A che ora hai finito?',
+    running: 'In corso',
+    startedAt: 'Iniziato alle',
+    addEntry: 'Aggiungi ore',
+    editEntry: 'Modifica ore',
+    deleteEntryTitle: 'Eliminare queste ore?',
+    deleteEntryBody: 'Verranno rimosse dal totale del mese.',
+    noEntries: 'Nessuna ora registrata questo mese.',
+    monthTotal: 'Totale',
+    decimalHours: 'ore decimali',
+    today: 'Oggi',
+    yesterday: 'Ieri',
+    manualEntry: 'manuale',
+    timerEntry: 'cronometro',
+    ownerViewNote: 'La titolare vede le tue ore, ma solo tu puoi modificarle.',
+  },
+
+  owner: {
+    reportTab: 'Rendiconto',
+    employeesTab: 'Dipendenti',
+    period: 'Periodo',
+    employeesFilter: 'Dipendenti',
+    allActive: 'Tutti gli attivi',
+    includeDeactivated: 'Includi disattivati',
+    colName: 'Nome',
+    colDays: 'Giorni',
+    colEntries: 'Voci',
+    colHours: 'Ore',
+    colDecimal: 'Decimale',
+    emptySummary: 'Nessun dipendente corrisponde alla selezione.',
+    viewDays: 'Vedi giorni',
+    hideDays: 'Nascondi giorni',
+    exportTotals: 'CSV · totali',
+    exportEntries: 'CSV · voci',
+    addEmployee: 'Aggiungi dipendente',
+    editEmployee: 'Modifica dipendente',
+    resetPassword: 'Nuova password',
+    resetConfirm:
+      'Assegnare una nuova password? Quella attuale smette di funzionare su tutti i dispositivi.',
+    created: 'Aggiunto',
+    deactivate: 'Disattiva',
+    reactivate: 'Riattiva',
+    deactivateConfirm:
+      'Disattivare l’account? Perde l’accesso, ma le ore passate restano nel rendiconto.',
+    active: 'Attivo',
+    inactive: 'Disattivato',
+    ownerReadonly: 'Vedi le ore di tutti; solo i dipendenti possono modificarle.',
+    revealNote: 'Questa password viene mostrata solo una volta: inviala ora.',
+    shareIntro: 'Benvenuto in Timbro Nuvolau!',
+    shareHint: 'Puoi cambiare la password dalle impostazioni dopo l’accesso.',
+  },
+
+  settingsPage: {
+    title: 'Impostazioni',
+    profileTitle: 'Profilo',
+    passwordTitle: 'Password',
+    currentPassword: 'Password attuale',
+    newPassword: 'Nuova password (min. 8 caratteri)',
+    saved: 'Salvato',
+    wrongCurrent: 'La password attuale è errata.',
+    readonlyNote:
+      'Come titolare vedi le ore di tutti, ma le voci possono essere modificate solo dal dipendente che le ha registrate.',
+  },
+}
+
+export const dictionaries = { en, it }
+export type Lang = keyof typeof dictionaries
+export { DEFAULT_LANG }
