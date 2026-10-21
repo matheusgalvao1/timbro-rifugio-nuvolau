@@ -12,9 +12,12 @@ const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const RENEW_BELOW_MS = 15 * 24 * 60 * 60 * 1000
 
 export function setSessionCookie(c: Context<HonoEnv>, token: string, expiresAt: Date): void {
+  // Secure only over https: on plain-http origins (e.g. LAN IP during dev),
+  // browsers silently drop Secure cookies and nobody could stay signed in.
+  const secure = new URL(c.req.url).protocol === 'https:'
   setCookie(c, SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: true,
+    secure,
     sameSite: 'Lax',
     path: '/',
     expires: expiresAt,
