@@ -1,0 +1,1 @@
+ALTER TABLE `time_entries` ADD `kind` text DEFAULT 'work' NOT NULL;

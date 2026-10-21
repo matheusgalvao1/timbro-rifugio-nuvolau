@@ -115,6 +115,19 @@ export const PowerIcon = (p: SVGProps<SVGSVGElement>) => (
   </Base>
 )
 
+export const PauseIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Base {...p}>
+    <path d="M9 5v14M15 5v14" />
+  </Base>
+)
+
+export const CalendarIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Base {...p}>
+    <rect x="3" y="5" width="18" height="16" rx="2" />
+    <path d="M8 3v4M16 3v4M3 10h18" />
+  </Base>
+)
+
 export const UserPlusIcon = (p: SVGProps<SVGSVGElement>) => (
   <Base {...p}>
     <circle cx="9" cy="8" r="4" />

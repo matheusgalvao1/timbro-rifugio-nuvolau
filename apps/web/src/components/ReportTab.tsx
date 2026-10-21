@@ -21,7 +21,7 @@ import {
   type SummaryCsvLabels,
 } from '../lib/csv'
 import { useT } from '../i18n/i18n'
-import { Input, Spinner } from './ui'
+import { Badge, Input, Spinner } from './ui'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './icons'
 
 function csvLabels(t: ReturnType<typeof useT>['t']): SummaryCsvLabels {
@@ -36,7 +36,14 @@ function csvLabels(t: ReturnType<typeof useT>['t']): SummaryCsvLabels {
 }
 
 function csvDetailLabels(t: ReturnType<typeof useT>['t']): DetailCsvLabels {
-  return { ...csvLabels(t), date: t.date, start: t.employee.start, end: t.employee.end }
+  return {
+    ...csvLabels(t),
+    date: t.date,
+    start: t.employee.start,
+    end: t.employee.end,
+    type: t.owner.csvType,
+    pause: t.owner.csvPause,
+  }
 }
 
 /** Laptop-first report: period + employee chips + CSV exports. */
@@ -324,18 +331,19 @@ function DetailRows({
   rows: ReportDetailRow[]
   loading: boolean
 }) {
-  const { lang } = useT()
+  const { lang, t } = useT()
   if (loading) return <Spinner className="mx-auto my-3 size-5 text-stone-300" />
   return (
     <div className="mt-3 w-full">
       <table className="w-full text-sm">
         <tbody>
           {rows.map((row) => (
-            <tr key={row.entryId} className="border-b border-stone-100 last:border-0">
+            <tr key={row.entryId} className={`border-b border-stone-100 last:border-0 ${row.kind === 'pause' ? 'text-stone-400' : ''}`}>
               <td className="py-1.5 pr-3 text-stone-500">{formatDayLabel(row.workDate, lang)}</td>
               <td className="py-1.5 font-mono tabular-nums">
                 {row.startTime} – {row.endTime ?? '…'}
               </td>
+              {row.kind === 'pause' && <td><Badge tone="muted">{t.owner.pauseBadge}</Badge></td>}
               <td className="py-1.5 text-right font-mono font-medium tabular-nums">
                 {row.minutes === null ? '' : formatDuration(row.minutes)}
               </td>

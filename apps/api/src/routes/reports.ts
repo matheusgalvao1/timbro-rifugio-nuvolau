@@ -75,7 +75,10 @@ reportsRoutes.get('/summary', validateQuery(reportQuery), async (c) => {
     if (!stat) continue
     stat.entryCount += 1
     stat.days.add(entry.workDate)
-    if (entry.endTime) stat.totalMinutes += entryMinutes(entry.startTime, entry.endTime)
+    // Only work entries are payable; pauses are recorded but unpaid.
+    if (entry.endTime && entry.kind === 'work') {
+      stat.totalMinutes += entryMinutes(entry.startTime, entry.endTime)
+    }
   }
   const summary: ReportSummaryRow[] = targets
     .map((user) => {
@@ -122,6 +125,7 @@ reportsRoutes.get('/detail', validateQuery(reportQuery), async (c) => {
       startTime: entry.startTime,
       endTime: entry.endTime ?? null,
       minutes: entry.endTime ? entryMinutes(entry.startTime, entry.endTime) : null,
+      kind: entry.kind,
     }))
     .sort(
       (a, b) =>

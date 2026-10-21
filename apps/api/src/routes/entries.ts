@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import { and, desc, eq, gte, lte } from 'drizzle-orm'
-import type { BatchItem } from 'drizzle-orm/batch'
 import { z } from 'zod'
 import {
   MIDNIGHT,
@@ -10,6 +9,8 @@ import {
   entryCreateSchema,
   entryUpdateSchema,
   monthDaysRange,
+  pauseSchema,
+  resumeSchema,
   timerStartSchema,
   timerStopSchema,
   type TimeEntry,
@@ -19,7 +20,12 @@ import { validateJson, validateQuery } from '../lib/validate'
 import { AppError, errNotFound, errValidation } from '../lib/errors'
 import { romeNow } from '../lib/rome'
 import { requireAuth, requireEmployee } from '../middleware/auth'
-import { assertNoOverlap, getRunningEntry, splitAcrossDays } from '../services/entries'
+import {
+  assertNoOverlap,
+  closeRunningAt,
+  getRunningEntry,
+  openRunningEntry,
+} from '../services/entries'
 import type { HonoEnv } from '../env'
 
 const rangeQuery = z.object({
@@ -37,12 +43,21 @@ function toApi(row: TimeEntryRow): TimeEntry {
     workDate: row.workDate,
     startTime: row.startTime,
     endTime: row.endTime ?? null,
+    kind: row.kind,
     source: row.source,
     createdAt: row.createdAt.getTime(),
     updatedAt: row.updatedAt.getTime(),
   }
 }
 
+/**
+ * The workday state machine behind the four quick actions:
+ *   idle          → /start (work) or /pause (direct pause)
+ *   work running  → /pause (closes work, opens pause) or /stop (finish day)
+ *   pause running → /resume (closes pause, reopens work) or /stop
+ * Every action accepts a custom date/time so forgotten clock-ins can be
+ * registered correctly after the fact.
+ */
 export const entriesRoutes = new Hono<HonoEnv>()
 
 entriesRoutes.get('/', requireAuth, validateQuery(rangeQuery), async (c) => {
@@ -91,6 +106,7 @@ entriesRoutes.post('/', requireEmployee, validateJson(entryCreateSchema), async 
       workDate: body.workDate,
       startTime: body.startTime,
       endTime: body.endTime,
+      kind: body.kind ?? 'work',
       source: 'manual',
       createdAt: now,
       updatedAt: now,
@@ -113,6 +129,7 @@ entriesRoutes.patch('/:id', requireEmployee, validateJson(entryUpdateSchema), as
   const workDate = body.workDate ?? row.workDate
   const startTime = body.startTime ?? row.startTime
   const endTime = body.endTime ?? row.endTime
+  const kind = body.kind ?? row.kind
   const today = romeNow().date
   if (compareDates(workDate, today) > 0) throw futureTime('Cannot log time for a future day')
   if (endTime) {
@@ -126,7 +143,7 @@ entriesRoutes.patch('/:id', requireEmployee, validateJson(entryUpdateSchema), as
   }
   const [updated] = await db
     .update(timeEntries)
-    .set({ workDate, startTime, endTime, updatedAt: new Date() })
+    .set({ workDate, startTime, endTime, kind, updatedAt: new Date() })
     .where(eq(timeEntries.id, row.id))
     .returning()
   return c.json({ entry: toApi(updated!) })
@@ -144,13 +161,11 @@ entriesRoutes.delete('/:id', requireEmployee, async (c) => {
   return c.json({ ok: true })
 })
 
+/** Begin the workday (optionally backdated: "I actually started at 8"). */
 entriesRoutes.post('/start', requireEmployee, validateJson(timerStartSchema), async (c) => {
   const db = c.get('db')
   const user = c.get('user')
   const body = c.req.valid('json')
-  if (await getRunningEntry(db, user.id)) {
-    throw new AppError('RUNNING_EXISTS', 409, 'A timer is already running')
-  }
   const { date: today, time: nowTime } = romeNow()
   const workDate = body.workDate ?? today
   const startTime = body.startTime ?? nowTime
@@ -158,25 +173,83 @@ entriesRoutes.post('/start', requireEmployee, validateJson(timerStartSchema), as
   if (workDate === today && compareTimes(startTime, nowTime) > 0) {
     throw futureTime('Cannot start in the future')
   }
-  // While it runs, reserve start..24:00 so nothing new overlaps it.
-  await assertNoOverlap(db, user.id, workDate, startTime, MIDNIGHT)
-  const now = new Date()
-  const [row] = await db
-    .insert(timeEntries)
-    .values({
-      id: crypto.randomUUID(),
-      userId: user.id,
-      workDate,
-      startTime,
-      endTime: null,
-      source: 'timer',
-      createdAt: now,
-      updatedAt: now,
-    })
-    .returning()
-  return c.json({ entry: toApi(row!) })
+  const entry = await openRunningEntry(db, user.id, {
+    workDate,
+    startTime,
+    kind: 'work',
+    source: 'timer',
+  })
+  return c.json({ entry: toApi(entry) })
 })
 
+/** Start a pause: closes a running workday at that instant, opens a pause. */
+entriesRoutes.post('/pause', requireEmployee, validateJson(pauseSchema), async (c) => {
+  const db = c.get('db')
+  const user = c.get('user')
+  const body = c.req.valid('json')
+  const { date: today, time: nowTime } = romeNow()
+  const workDate = body.workDate ?? today
+  const startTime = body.startTime ?? nowTime
+  if (compareDates(workDate, today) > 0) throw futureTime('Cannot pause in the future')
+  if (workDate === today && compareTimes(startTime, nowTime) > 0) {
+    throw futureTime('Cannot pause in the future')
+  }
+  const running = await getRunningEntry(db, user.id)
+  if (running?.kind === 'pause') {
+    throw new AppError('RUNNING_EXISTS', 409, 'The pause is already running')
+  }
+  if (running) {
+    // The pause must begin after the work it interrupts.
+    if (compareDates(workDate, running.workDate) < 0) {
+      throw errValidation('The pause cannot start before the workday')
+    }
+    if (workDate === running.workDate && compareTimes(startTime, running.startTime) < 0) {
+      throw errValidation('The pause cannot start before the workday')
+    }
+    await closeRunningAt(db, user.id, running, workDate, startTime)
+  }
+  const entry = await openRunningEntry(db, user.id, {
+    workDate,
+    startTime,
+    kind: 'pause',
+    source: 'timer',
+  })
+  return c.json({ entry: toApi(entry) })
+})
+
+/** End a pause: closes it and resumes the workday from that instant. */
+entriesRoutes.post('/resume', requireEmployee, validateJson(resumeSchema), async (c) => {
+  const db = c.get('db')
+  const user = c.get('user')
+  const body = c.req.valid('json')
+  const { date: today, time: nowTime } = romeNow()
+  const endDate = body.endDate ?? today
+  const endTime = body.endTime ?? nowTime
+  if (compareDates(endDate, today) > 0) throw futureTime('Cannot resume in the future')
+  if (endDate === today && compareTimes(endTime, nowTime) > 0) {
+    throw futureTime('Cannot resume in the future')
+  }
+  const running = await getRunningEntry(db, user.id)
+  if (!running || running.kind !== 'pause') {
+    throw new AppError('RUNNING_MISSING', 409, 'No pause is running')
+  }
+  if (compareDates(endDate, running.workDate) < 0) {
+    throw errValidation('The pause cannot end before it started')
+  }
+  if (endDate === running.workDate && compareTimes(endTime, running.startTime) < 0) {
+    throw errValidation('The pause cannot end before it started')
+  }
+  await closeRunningAt(db, user.id, running, endDate, endTime)
+  const entry = await openRunningEntry(db, user.id, {
+    workDate: endDate,
+    startTime: endTime,
+    kind: 'work',
+    source: 'timer',
+  })
+  return c.json({ entry: toApi(entry) })
+})
+
+/** Finish the workday: closes whatever is running (work or pause). */
 entriesRoutes.post('/stop', requireEmployee, validateJson(timerStopSchema), async (c) => {
   const db = c.get('db')
   const user = c.get('user')
@@ -193,44 +266,17 @@ entriesRoutes.post('/stop', requireEmployee, validateJson(timerStopSchema), asyn
   if (endDate === today && compareTimes(endTime, nowTime) > 0) {
     throw futureTime('Cannot stop in the future')
   }
-  const segments = splitAcrossDays(running.workDate, running.startTime, endDate, endTime)
-  for (const [index, segment] of segments.entries()) {
-    await assertNoOverlap(
-      db,
-      user.id,
-      segment.workDate,
-      segment.startTime,
-      segment.endTime,
-      index === 0 ? running.id : undefined,
-    ).catch(() => {
+  try {
+    await closeRunningAt(db, user.id, running, endDate, endTime)
+  } catch (error) {
+    if (error instanceof AppError && error.code === 'OVERLAP') {
       throw new AppError(
         'OVERLAP',
         409,
         'The timer ran across days that already have logged hours. Stop it on its start day (set that date in the stop dialog), or remove the conflicting entries first.',
       )
-    })
+    }
+    throw error
   }
-  const statements: [BatchItem<'sqlite'>, ...BatchItem<'sqlite'>[]] = [
-    db
-      .update(timeEntries)
-      .set({ endTime: segments[0]!.endTime, updatedAt: new Date() })
-      .where(eq(timeEntries.id, running.id)),
-  ]
-  const now = new Date()
-  for (const segment of segments.slice(1)) {
-    statements.push(
-      db.insert(timeEntries).values({
-        id: crypto.randomUUID(),
-        userId: user.id,
-        workDate: segment.workDate,
-        startTime: segment.startTime,
-        endTime: segment.endTime,
-        source: running.source,
-        createdAt: now,
-        updatedAt: now,
-      }),
-    )
-  }
-  await db.batch(statements)
   return c.json({ ok: true })
 })

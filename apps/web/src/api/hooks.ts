@@ -71,6 +71,24 @@ export function useStopTimer() {
   })
 }
 
+export function usePauseTimer() {
+  const invalidate = useInvalidateTime()
+  return useMutation({
+    mutationFn: (input: { workDate?: string; startTime?: string }) =>
+      api<{ entry: TimeEntry }>('/api/entries/pause', { method: 'POST', json: input }),
+    onSuccess: invalidate,
+  })
+}
+
+export function useResumeTimer() {
+  const invalidate = useInvalidateTime()
+  return useMutation({
+    mutationFn: (input: { endDate?: string; endTime?: string }) =>
+      api<{ entry: TimeEntry }>('/api/entries/resume', { method: 'POST', json: input }),
+    onSuccess: invalidate,
+  })
+}
+
 function useInvalidateTime() {
   const queryClient = useQueryClient()
   return async () => {

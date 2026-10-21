@@ -49,6 +49,18 @@ function locale(lang: string): string {
   return lang === 'it' ? 'it-IT' : 'en-GB'
 }
 
+/** e.g. "Wed 22 Oct 2026" — for the owner's day header. */
+export function formatDateLabelFull(date: string, lang: string): string {
+  const [y = 1970, m = 1, d = 1] = date.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(locale(lang), {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
 export function formatMonthLabel(monthKey: string, lang: string): string {
   const [y = 1970, m = 1] = monthKey.split('-').map(Number)
   // String-derived date literals are formatted in UTC — local zones shift the day.

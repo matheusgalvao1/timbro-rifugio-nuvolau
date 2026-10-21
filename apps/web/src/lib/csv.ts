@@ -31,7 +31,13 @@ export interface SummaryCsvLabels {
   decimal: string
 }
 
-export type DetailCsvLabels = SummaryCsvLabels & { date: string; start: string; end: string }
+export type DetailCsvLabels = SummaryCsvLabels & {
+  date: string
+  start: string
+  end: string
+  type: string
+  pause: string
+}
 
 export function summaryCsvTable(rows: ReportSummaryRow[], labels: SummaryCsvLabels): Cell[][] {
   return [
@@ -54,6 +60,7 @@ export function detailCsvTable(rows: ReportDetailRow[], labels: DetailCsvLabels)
     labels.date,
     labels.start,
     labels.end,
+    labels.type,
     labels.hours,
     labels.decimal,
   ]
@@ -65,6 +72,7 @@ export function detailCsvTable(rows: ReportDetailRow[], labels: DetailCsvLabels)
       row.workDate,
       row.startTime,
       row.endTime ?? '',
+      row.kind === 'pause' ? labels.pause : '',
       row.minutes === null ? '' : formatDuration(row.minutes),
       row.minutes === null ? '' : decimalHours(row.minutes),
     ]),

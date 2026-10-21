@@ -1,4 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm'
+import type { BatchItem } from 'drizzle-orm/batch'
 import { timeEntries, type TimeEntryRow } from '@nuvolau/db'
 import {
   MIDNIGHT,
@@ -18,6 +19,7 @@ export function overlapError(existing: { startTime: string; endTime: string | nu
   )
 }
 
+/** The single entry still open for a user — work day or pause, at most one. */
 export async function getRunningEntry(db: Db, userId: string): Promise<TimeEntryRow | undefined> {
   const [row] = await db
     .select()
@@ -83,4 +85,87 @@ export function splitAcrossDays(
     segments.push({ workDate: endDate, startTime: '00:00', endTime })
   }
   return segments
+}
+
+export type OpenRunningInput = {
+  workDate: string
+  startTime: string
+  kind: 'work' | 'pause'
+  source: 'manual' | 'timer'
+}
+
+/** Opens a new running entry; rejects if one is already open or it overlaps. */
+export async function openRunningEntry(
+  db: Db,
+  userId: string,
+  input: OpenRunningInput,
+): Promise<TimeEntryRow> {
+  if (await getRunningEntry(db, userId)) {
+    throw new AppError('RUNNING_EXISTS', 409, 'An entry is already running')
+  }
+  // While it runs, reserve start..24:00 so nothing new overlaps it.
+  await assertNoOverlap(db, userId, input.workDate, input.startTime, MIDNIGHT)
+  const now = new Date()
+  const [row] = await db
+    .insert(timeEntries)
+    .values({
+      id: crypto.randomUUID(),
+      userId,
+      workDate: input.workDate,
+      startTime: input.startTime,
+      endTime: null,
+      kind: input.kind,
+      source: input.source,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning()
+  return row!
+}
+
+/**
+ * Closes a running entry at the given instant, splitting per-day if needed;
+ * inherits the entry's kind/source for the extra day rows.
+ */
+export async function closeRunningAt(
+  db: Db,
+  userId: string,
+  running: TimeEntryRow,
+  endDate: string,
+  endTime: string,
+): Promise<void> {
+  const segments = splitAcrossDays(running.workDate, running.startTime, endDate, endTime)
+  for (const [index, segment] of segments.entries()) {
+    await assertNoOverlap(
+      db,
+      userId,
+      segment.workDate,
+      segment.startTime,
+      segment.endTime,
+      index === 0 ? running.id : undefined,
+    )
+  }
+  const now = new Date()
+  const statements: [BatchItem<'sqlite'>, ...BatchItem<'sqlite'>[]] = [
+    db
+      .update(timeEntries)
+      .set({ endTime: segments[0]!.endTime, updatedAt: now })
+      .where(eq(timeEntries.id, running.id)),
+  ]
+  for (const segment of segments.slice(1)) {
+    statements.push(
+      db.insert(timeEntries).values({
+        id: crypto.randomUUID(),
+        userId,
+        workDate: segment.workDate,
+        startTime: segment.startTime,
+        endTime: segment.endTime,
+        kind: running.kind,
+        source: running.source,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    )
+  }
+  await db.batch(statements)
 }

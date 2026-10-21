@@ -4,6 +4,7 @@ import {
   entryCreateSchema,
   entryUpdateSchema,
   entryMinutes,
+  type EntryKind,
   type TimeEntry,
 } from '@nuvolau/shared'
 import { useEntryMutation } from '../api/hooks'
@@ -13,13 +14,14 @@ import { Button, Dialog, ErrorNote, Field, Input } from './ui'
 
 type Mode = { kind: 'create'; defaultDate?: string } | { kind: 'edit'; entry: TimeEntry }
 
-/** Add or edit one work period. Running entries simply omit the end time. */
+/** Add or edit one period. Running entries simply omit the end time. */
 export function EntryDialog({ mode, onClose }: { mode: Mode | null; onClose: () => void }) {
   const { t } = useT()
   const mutation = useEntryMutation(mode?.kind === 'edit' ? mode.entry.id : null)
   const [date, setDate] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
+  const [kind, setKind] = useState<EntryKind>('work')
   const [localError, setLocalError] = useState<string | null>(null)
   const [longConfirmed, setLongConfirmed] = useState(false)
 
@@ -31,11 +33,13 @@ export function EntryDialog({ mode, onClose }: { mode: Mode | null; onClose: () 
       setDate(mode.entry.workDate)
       setStart(mode.entry.startTime)
       setEnd(mode.entry.endTime ?? '')
+      setKind(mode.entry.kind)
     } else {
       const now = romeNow()
       setDate(mode.defaultDate ?? now.date)
       setStart('')
       setEnd('')
+      setKind('work')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode])
@@ -54,8 +58,8 @@ export function EntryDialog({ mode, onClose }: { mode: Mode | null; onClose: () 
       return
     }
     const body = end
-      ? { workDate: date, startTime: start, endTime: end }
-      : { workDate: date, startTime: start }
+      ? { workDate: date, startTime: start, endTime: end, kind }
+      : { workDate: date, startTime: start, kind }
     const schema = mode.kind === 'edit' ? entryUpdateSchema : entryCreateSchema
     if (!schema.safeParse(body).success) {
       setLocalError(t.errors.VALIDATION)
@@ -67,6 +71,8 @@ export function EntryDialog({ mode, onClose }: { mode: Mode | null; onClose: () 
     }
     mutation.mutate(body, { onSuccess: () => onClose() })
   }
+
+  const segment = 'rounded-md px-3 py-1 text-sm font-medium transition'
 
   return (
     <Dialog
@@ -92,6 +98,16 @@ export function EntryDialog({ mode, onClose }: { mode: Mode | null; onClose: () 
             <Input type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
           </Field>
         </div>
+        <Field label={t.employee.entryType}>
+          <div className="flex gap-1 rounded-lg bg-stone-200/70 p-1">
+            <button type="button" onClick={() => setKind('work')} className={`${segment} ${kind === 'work' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}>
+              {t.employee.workBadge}
+            </button>
+            <button type="button" onClick={() => setKind('pause')} className={`${segment} ${kind === 'pause' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}>
+              {t.employee.pauseBadge}
+            </button>
+          </div>
+        </Field>
         {tooLong && (
           <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-700 ring-1 ring-amber-200">
             {t.employee.longEntry}

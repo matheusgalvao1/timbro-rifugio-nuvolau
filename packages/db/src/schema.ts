@@ -42,6 +42,7 @@ export const timeEntries = sqliteTable(
     workDate: text('work_date').notNull(), // YYYY-MM-DD, Europe/Rome
     startTime: text('start_time').notNull(), // HH:mm
     endTime: text('end_time'), // HH:mm or '24:00'; NULL = timer still running
+    kind: text('kind', { enum: ['work', 'pause'] }).notNull().default('work'), // pause = unpaid break
     source: text('source', { enum: ['manual', 'timer'] }).notNull().default('manual'),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),

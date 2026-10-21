@@ -3,12 +3,13 @@ import { useUsers } from '../api/hooks'
 import { useT } from '../i18n/i18n'
 import { ErrorNote, Spinner } from '../components/ui'
 import { EmployeesTab } from '../components/EmployeesTab'
+import { OwnerDayTab } from '../components/OwnerDayTab'
 import { ReportTab } from '../components/ReportTab'
 
 export function OwnerPage() {
   const { t } = useT()
   const usersQuery = useUsers()
-  const [tab, setTab] = useState<'report' | 'employees'>('report')
+  const [tab, setTab] = useState<'day' | 'report' | 'employees'>('day')
 
   const tabButton = (active: boolean) =>
     `rounded-lg px-4 py-2 text-sm font-medium transition ${
@@ -28,7 +29,10 @@ export function OwnerPage() {
 
   return (
     <div className="space-y-4">
-      <div className="grid max-w-xs grid-cols-2 gap-1 rounded-xl bg-stone-200/70 p-1">
+      <div className="grid max-w-md grid-cols-3 gap-1 rounded-xl bg-stone-200/70 p-1">
+        <button onClick={() => setTab('day')} className={tabButton(tab === 'day')}>
+          {t.owner.dayTab}
+        </button>
         <button onClick={() => setTab('report')} className={tabButton(tab === 'report')}>
           {t.owner.reportTab}
         </button>
@@ -36,9 +40,10 @@ export function OwnerPage() {
           {t.owner.employeesTab}
         </button>
       </div>
-      <p className="text-xs text-stone-400">{t.owner.ownerReadonly}</p>
 
-      {tab === 'report' ? <ReportTab users={usersQuery.data.users} /> : <EmployeesTab users={usersQuery.data.users} />}
+      {tab === 'day' && <OwnerDayTab users={usersQuery.data.users} />}
+      {tab === 'report' && <ReportTab users={usersQuery.data.users} />}
+      {tab === 'employees' && <EmployeesTab users={usersQuery.data.users} />}
     </div>
   )
 }

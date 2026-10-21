@@ -34,10 +34,14 @@ export const updateProfileSchema = z.object({
   displayName: displayNameSchema.optional(),
 })
 
+export const entryKindSchema = z.enum(['work', 'pause'])
+export type EntryKind = z.infer<typeof entryKindSchema>
+
 export const entryCreateSchema = z.object({
   workDate: dateSchema,
   startTime: timeSchema,
   endTime: endTimeSchema,
+  kind: entryKindSchema.optional(),
 })
 
 export const entryUpdateSchema = entryCreateSchema.partial()
@@ -48,6 +52,16 @@ export const timerStartSchema = z.object({
 })
 
 export const timerStopSchema = z.object({
+  endDate: dateSchema.optional(),
+  endTime: timeSchema.optional(),
+})
+
+export const pauseSchema = z.object({
+  workDate: dateSchema.optional(),
+  startTime: timeSchema.optional(),
+})
+
+export const resumeSchema = z.object({
   endDate: dateSchema.optional(),
   endTime: timeSchema.optional(),
 })
@@ -80,6 +94,7 @@ export type TimeEntry = {
   workDate: string
   startTime: string
   endTime: string | null
+  kind: EntryKind
   source: 'manual' | 'timer'
   createdAt: number
   updatedAt: number
@@ -105,6 +120,7 @@ export type ReportDetailRow = {
   /** null = the timer for this entry is still running */
   endTime: string | null
   minutes: number | null
+  kind: EntryKind
 }
 
 export type ApiErrorCode =
