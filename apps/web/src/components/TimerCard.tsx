@@ -53,6 +53,11 @@ export function TimerCard() {
               </p>
             </div>
           </div>
+          {elapsedMinutes > 16 * 60 && (
+            <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-700 ring-1 ring-amber-200">
+              {t.employee.longRunning}
+            </p>
+          )}
           <Button className="w-full" onClick={() => setStopOpen(true)}>
             <StopIcon className="size-4" />
             {t.employee.stop}

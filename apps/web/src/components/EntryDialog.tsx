@@ -3,6 +3,7 @@ import {
   compareTimes,
   entryCreateSchema,
   entryUpdateSchema,
+  entryMinutes,
   type TimeEntry,
 } from '@nuvolau/shared'
 import { useEntryMutation } from '../api/hooks'
@@ -20,10 +21,12 @@ export function EntryDialog({ mode, onClose }: { mode: Mode | null; onClose: () 
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [localError, setLocalError] = useState<string | null>(null)
+  const [longConfirmed, setLongConfirmed] = useState(false)
 
   useEffect(() => {
     if (!mode) return
     setLocalError(null)
+    setLongConfirmed(false)
     if (mode.kind === 'edit') {
       setDate(mode.entry.workDate)
       setStart(mode.entry.startTime)
@@ -39,9 +42,17 @@ export function EntryDialog({ mode, onClose }: { mode: Mode | null; onClose: () 
 
   if (!mode) return null
 
+  // Guardrail: entries beyond a full workday deserve a second look.
+  const minutes = end ? entryMinutes(start, end) : 0
+  const tooLong = !!end && minutes > 14 * 60
+
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
     setLocalError(null)
+    if (tooLong && !longConfirmed) {
+      setLongConfirmed(true)
+      return
+    }
     const body = end
       ? { workDate: date, startTime: start, endTime: end }
       : { workDate: date, startTime: start }
@@ -74,13 +85,18 @@ export function EntryDialog({ mode, onClose }: { mode: Mode | null; onClose: () 
           />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Start">
+          <Field label={t.employee.start}>
             <Input type="time" value={start} onChange={(e) => setStart(e.target.value)} required />
           </Field>
-          <Field label="End">
+          <Field label={t.employee.end}>
             <Input type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
           </Field>
         </div>
+        {tooLong && (
+          <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-700 ring-1 ring-amber-200">
+            {t.employee.longEntry}
+          </p>
+        )}
         {mode.kind === 'edit' && !mode.entry.endTime && (
           <p className="text-xs text-stone-500">{t.employee.running}</p>
         )}

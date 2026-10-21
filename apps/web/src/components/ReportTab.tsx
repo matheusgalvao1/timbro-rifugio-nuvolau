@@ -21,7 +21,7 @@ import {
   type SummaryCsvLabels,
 } from '../lib/csv'
 import { useT } from '../i18n/i18n'
-import { Spinner } from './ui'
+import { Input, Spinner } from './ui'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './icons'
 
 function csvLabels(t: ReturnType<typeof useT>['t']): SummaryCsvLabels {
@@ -36,17 +36,26 @@ function csvLabels(t: ReturnType<typeof useT>['t']): SummaryCsvLabels {
 }
 
 function csvDetailLabels(t: ReturnType<typeof useT>['t']): DetailCsvLabels {
-  return { ...csvLabels(t), date: t.date }
+  return { ...csvLabels(t), date: t.date, start: t.employee.start, end: t.employee.end }
 }
 
 /** Laptop-first report: period + employee chips + CSV exports. */
 export function ReportTab({ users }: { users: UserPublic[] }) {
   const { t, lang } = useT()
-  const [monthKey, setMonthKey] = useState(currentMonthKey)
-  const range = monthKeyToRange(monthKey)
+  const [range, setRange] = useState(() => monthKeyToRange(currentMonthKey()))
   const [selected, setSelected] = useState<Set<string> | null>(null)
   const [includeDeactivated, setIncludeDeactivated] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  // Chevrons snap to whole months; the date inputs allow any custom period.
+  const shiftMonth = (delta: number) => {
+    setRange(monthKeyToRange(shiftMonthKey(range.from.slice(0, 7), delta)))
+  }
+  const fromMonth = monthKeyToRange(range.from.slice(0, 7))
+  const isWholeMonth = range.from === fromMonth.from && range.to === fromMonth.to
+  const heading = isWholeMonth
+    ? formatMonthLabel(range.from.slice(0, 7), lang)
+    : `${formatDayLabel(range.from, lang)} – ${formatDayLabel(range.to, lang)}`
 
   const visibleUsers = users.filter(
     (user) => user.role === 'employee' && (user.isActive || includeDeactivated),
@@ -98,17 +107,42 @@ export function ReportTab({ users }: { users: UserPublic[] }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
-          <button onClick={() => setMonthKey(shiftMonthKey(monthKey, -1))} className={iconButton} aria-label="previous month">
+          <button onClick={() => shiftMonth(-1)} className={iconButton} aria-label="previous month">
             <ChevronLeftIcon className="size-5" />
           </button>
-          <h2 className="w-44 text-center text-[15px] font-semibold capitalize">
-            {formatMonthLabel(monthKey, lang)}
+          <h2 className="w-44 truncate text-center text-[15px] font-semibold capitalize sm:w-56">
+            {heading}
           </h2>
-          <button onClick={() => setMonthKey(shiftMonthKey(monthKey, 1))} className={iconButton} aria-label="next month">
+          <button onClick={() => shiftMonth(1)} className={iconButton} aria-label="next month">
             <ChevronRightIcon className="size-5" />
           </button>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="date"
+              value={range.from}
+              max={range.to}
+              onChange={(e) => {
+                const from = e.target.value
+                if (!from) return
+                setRange({ from, to: from > range.to ? from : range.to })
+              }}
+              className="!w-auto !px-2 !py-1 text-sm"
+            />
+            <span className="text-stone-400">–</span>
+            <Input
+              type="date"
+              value={range.to}
+              min={range.from}
+              onChange={(e) => {
+                const to = e.target.value
+                if (!to) return
+                setRange({ from: to < range.from ? to : range.from, to })
+              }}
+              className="!w-auto !px-2 !py-1 text-sm"
+            />
+          </div>
           <button onClick={exportTotals} disabled={summary.isPending || summaryRows.length === 0} className={csvButton}>
             {t.owner.exportTotals}
           </button>

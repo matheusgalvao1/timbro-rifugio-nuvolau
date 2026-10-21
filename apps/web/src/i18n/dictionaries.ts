@@ -64,6 +64,10 @@ export const en = {
     manualEntry: 'manual',
     timerEntry: 'timer',
     ownerViewNote: 'Hours are read by the owner but can only be changed by you.',
+    start: 'Start',
+    end: 'End',
+    longRunning: 'Running for over 16 hours — did you forget to stop it?',
+    longEntry: 'This entry is over 14 hours. Double-check the times.',
   },
 
   owner: {
@@ -178,6 +182,10 @@ export const it: Dictionary = {
     manualEntry: 'manuale',
     timerEntry: 'cronometro',
     ownerViewNote: 'La titolare vede le tue ore, ma solo tu puoi modificarle.',
+    start: 'Inizio',
+    end: 'Fine',
+    longRunning: 'In corso da oltre 16 ore — hai dimenticato di fermarlo?',
+    longEntry: 'Questa voce supera le 14 ore. Ricontrolla gli orari.',
   },
 
   owner: {
