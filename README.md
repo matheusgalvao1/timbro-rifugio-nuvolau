@@ -44,7 +44,7 @@ Seeded owner account for dev comes from `apps/api/.dev.vars`
 
 ```sh
 # one-time
-wrangler d1 create timbro-nuvolau          # copy the id into apps/api/wrangler.jsonc
+wrangler d1 create timbro-nuvolau --location weur   # EU region; copy the id into apps/api/wrangler.jsonc
 pnpm --filter @nuvolau/api wrangler secret put ADMIN_USERNAME
 pnpm --filter @nuvolau/api wrangler secret put ADMIN_PASSWORD
 # every release

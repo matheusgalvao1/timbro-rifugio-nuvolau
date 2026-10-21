@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --port 8787",
+    "dev": "wrangler dev --ip 0.0.0.0 --port 8787",
     "deploy": "wrangler deploy",
     "migrate:local": "wrangler d1 migrations apply timbro-nuvolau --local",
     "typecheck": "tsc --noEmit"
