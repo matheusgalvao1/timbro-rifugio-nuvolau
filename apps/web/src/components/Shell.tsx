@@ -62,7 +62,7 @@ export function Shell({ user, children }: { user: UserPublic; children: ReactNod
           </div>
         </div>
       </header>
-      <main className={`${containerWidth} flex-1 pb-24 pt-4`}>{children}</main>
+      <main className={`${containerWidth} w-full min-w-0 flex-1 pb-24 pt-4`}>{children}</main>
     </div>
   )
 }

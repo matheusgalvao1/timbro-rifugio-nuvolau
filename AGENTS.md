@@ -11,7 +11,8 @@ Roughly a handful of users — simplicity and clarity beat features. Never add
 complexity (rates, payroll math, approvals, notifications) without asking first.
 
 Users: **employees are on phones** (mobile-first, single focused day view),
-**the owner is on a laptop** (day view: calendar left, per-employee breakdown right).
+**the owner is on a laptop** (timesheet grid: employees × 7 day columns, cell
+click-through to that day's entries; totals dialog for arbitrary pay periods + CSV).
 Both must be fully usable and nice on both device classes. UI ships in English +
 Italian; develop in English, flip `DEFAULT_LANG` to `'it'` in
 `apps/web/src/i18n/dictionaries.ts` only when shipping to the rifugio.

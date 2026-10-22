@@ -190,13 +190,14 @@ export interface ReportFilter {
   users?: string[]
 }
 
-export function useReportSummary(filter: ReportFilter) {
+export function useReportSummary(filter: ReportFilter, enabled = true) {
   return useQuery({
     queryKey: ['summary', filter.from, filter.to, filter.users?.join(',') ?? ''],
     queryFn: () =>
       api<{ from: string; to: string; summary: ReportSummaryRow[] }>(
         `/api/reports/summary${qs({ from: filter.from, to: filter.to, users: filter.users })}`,
       ),
+    enabled,
   })
 }
 
