@@ -20,7 +20,7 @@ export function RequireAuth({
   const user = me.data?.user
   if (!user) return <Navigate to="/login" replace />
   if (role && user.role !== role) {
-    return <Navigate to={user.role === 'owner' ? '/owner' : '/app'} replace />
+    return <Navigate to={user.role === 'owner' ? '/admin' : '/app'} replace />
   }
   return <Shell user={user}>{children}</Shell>
 }

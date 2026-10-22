@@ -205,6 +205,13 @@ export function fetchReportDetail(filter: ReportFilter) {
   return api<{ rows: ReportDetailRow[] }>(`/api/reports/detail${qs({ from: filter.from, to: filter.to, users: filter.users })}`)
 }
 
+/** On-demand summary rows (CSV export). */
+export function fetchReportSummary(filter: ReportFilter) {
+  return api<{ from: string; to: string; summary: ReportSummaryRow[] }>(
+    `/api/reports/summary${qs({ from: filter.from, to: filter.to, users: filter.users })}`,
+  )
+}
+
 export function useReportDetail(filter: ReportFilter, enabled: boolean) {
   return useQuery({
     queryKey: ['detail', filter.from, filter.to, filter.users?.join(',') ?? ''],

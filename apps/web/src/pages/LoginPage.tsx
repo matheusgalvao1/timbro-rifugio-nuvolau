@@ -15,12 +15,12 @@ export function LoginPage() {
   // Already signed in? Straight to the right area.
   useEffect(() => {
     const user = me.data?.user
-    if (user) navigate(user.role === 'owner' ? '/owner' : '/app', { replace: true })
+    if (user) navigate(user.role === 'owner' ? '/admin' : '/app', { replace: true })
   }, [me.data, navigate])
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
-    login.mutate({ username, password }, { onSuccess: (data) => navigate(data.user.role === 'owner' ? '/owner' : '/app', { replace: true }) })
+    login.mutate({ username, password }, { onSuccess: (data) => navigate(data.user.role === 'owner' ? '/admin' : '/app', { replace: true }) })
   }
 
   return (

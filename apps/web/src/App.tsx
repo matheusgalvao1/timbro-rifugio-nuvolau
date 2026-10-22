@@ -5,6 +5,7 @@ import { CenteredSpinner } from './components/ui'
 import { LoginPage } from './pages/LoginPage'
 import { EmployeePage } from './pages/EmployeePage'
 import { OwnerPage } from './pages/OwnerPage'
+import { EmployeesPage } from './pages/EmployeesPage'
 import { SettingsPage } from './pages/SettingsPage'
 
 function HomeRedirect() {
@@ -12,7 +13,7 @@ function HomeRedirect() {
   if (me.isPending) return <CenteredSpinner />
   const user = me.data?.user
   if (!user) return <Navigate to="/login" replace />
-  return <Navigate to={user.role === 'owner' ? '/owner' : '/app'} replace />
+  return <Navigate to={user.role === 'owner' ? '/admin' : '/app'} replace />
 }
 
 export default function App() {
@@ -29,10 +30,18 @@ export default function App() {
         }
       />
       <Route
-        path="/owner"
+        path="/admin"
         element={
           <RequireAuth role="owner">
             <OwnerPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/employees"
+        element={
+          <RequireAuth role="owner">
+            <EmployeesPage />
           </RequireAuth>
         }
       />

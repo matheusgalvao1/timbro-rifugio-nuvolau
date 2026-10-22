@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { UserPublic } from '@nuvolau/shared'
 import { useLogout } from '../api/hooks'
 import { useT } from '../i18n/i18n'
-import { GearIcon, LogOutIcon } from './icons'
+import { GearIcon, LogOutIcon, UserPlusIcon } from './icons'
 
 function Logo() {
   return (
@@ -23,8 +23,8 @@ export function Shell({ user, children }: { user: UserPublic; children: ReactNod
   const logout = useLogout()
   const navigate = useNavigate()
   const isOwner = user.role === 'owner'
-  const home = isOwner ? '/owner' : '/app'
-  const containerWidth = isOwner ? 'mx-auto max-w-5xl px-4' : 'mx-auto max-w-md px-4'
+  const home = isOwner ? '/admin' : '/app'
+  const containerWidth = isOwner ? 'mx-auto max-w-6xl px-4' : 'mx-auto max-w-4xl px-4'
   const iconButton =
     'grid size-9 place-items-center rounded-full text-stone-500 transition hover:bg-stone-200/70 hover:text-stone-700'
 
@@ -37,6 +37,11 @@ export function Shell({ user, children }: { user: UserPublic; children: ReactNod
             {t.appName}
           </Link>
           <div className="ml-auto flex items-center gap-0.5" style={{ marginRight: 'env(safe-area-inset-right)' }}>
+            {isOwner && (
+              <Link to="/admin/employees" className={iconButton} title={t.owner.employeesTab}>
+                <UserPlusIcon className="size-5" />
+              </Link>
+            )}
             <button
               onClick={() => setLang(lang === 'en' ? 'it' : 'en')}
               className={`${iconButton} text-xs font-semibold`}
