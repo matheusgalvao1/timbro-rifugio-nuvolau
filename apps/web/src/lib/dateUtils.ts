@@ -61,31 +61,16 @@ export function formatDateLabelFull(date: string, lang: string): string {
   })
 }
 
-/** Weekday + day number for timesheet column headers ("Wed" / "22"). */
-export function formatDayParts(date: string, lang: string): { weekday: string; day: string } {
+/** Weekday + day/month for timesheet column headers ("Wed" / "22 Oct"). */
+export function formatDayParts(date: string, lang: string): { weekday: string; day: string; month: string } {
   const [y = 1970, m = 1, d = 1] = date.split('-').map(Number)
   const utc = new Date(Date.UTC(y, m - 1, d))
   // String-derived date literals are formatted in UTC — local zones shift the day.
   return {
     weekday: utc.toLocaleDateString(locale(lang), { weekday: 'short', timeZone: 'UTC' }),
     day: utc.toLocaleDateString(locale(lang), { day: 'numeric', timeZone: 'UTC' }),
+    month: utc.toLocaleDateString(locale(lang), { month: 'short', timeZone: 'UTC' }),
   }
-}
-
-/** e.g. "22–28 Oct 2026" (one month) or "28 Oct – 3 Nov 2026" (across months). */
-export function formatRangeLabel(from: string, to: string, lang: string): string {
-  const [fy = 1970, fm = 1, fd = 1] = from.split('-').map(Number)
-  const [ty = 1970, tm = 1, td = 1] = to.split('-').map(Number)
-  const at = (y: number, m: number, d: number, withYear: boolean): string =>
-    new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(locale(lang), {
-      day: 'numeric',
-      month: 'short',
-      ...(withYear ? { year: 'numeric' } : {}),
-      timeZone: 'UTC',
-    })
-  if (fy === ty && fm === tm) return `${fd}–${at(ty, tm, td, true)}`
-  if (fy === ty) return `${at(fy, fm, fd, false)} – ${at(ty, tm, td, true)}`
-  return `${at(fy, fm, fd, true)} – ${at(ty, tm, td, true)}`
 }
 
 export function formatMonthLabel(monthKey: string, lang: string): string {

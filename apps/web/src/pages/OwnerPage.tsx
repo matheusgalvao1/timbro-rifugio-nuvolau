@@ -6,7 +6,7 @@ import {
   type ReportDetailRow,
 } from '@nuvolau/shared'
 import { useReportDetail, useUsers } from '../api/hooks'
-import { formatDateLabelFull, formatDayParts, formatRangeLabel, romeNow } from '../lib/dateUtils'
+import { formatDateLabelFull, formatDayParts, romeNow } from '../lib/dateUtils'
 import { useT } from '../i18n/i18n'
 import { TotalsDialog } from '../components/TotalsDialog'
 import { Badge, Button, Card, Dialog, ErrorNote, Spinner } from '../components/ui'
@@ -19,11 +19,11 @@ interface DrillTarget {
 }
 
 /**
- * Owner home: a timesheet grid instead of a calendar — one row per employee,
- * seven day columns starting at the chosen day (default: today), one total
- * column. Clicking a cell opens that employee's entries for the day. The
- * totals dialog computes any pay period for each employee and all combined,
- * and exports the CSVs from the same range.
+ * Owner home: a timesheet grid — one row per employee, seven day columns
+ * starting at the chosen day (default: today). The table carries its own
+ * navigation: ‹ sits in the sticky name header, › (and a Today reset) at the
+ * right edge. Clicking a cell opens that employee's entries for the day; the
+ * totals dialog computes any pay period and exports the CSVs.
  */
 export function OwnerPage() {
   const { t, lang } = useT()
@@ -43,9 +43,8 @@ export function OwnerPage() {
     [usersQuery.data],
   )
   const employeeIds = employees.map((user) => user.id)
-  const weekEnd = addDays(weekStart, 6)
   const weekDetail = useReportDetail(
-    { from: weekStart, to: weekEnd, users: employeeIds },
+    { from: weekStart, to: addDays(weekStart, 6), users: employeeIds },
     employeeIds.length > 0,
   )
 
@@ -69,8 +68,7 @@ export function OwnerPage() {
   }, [weekDetail.data])
 
   const navButton =
-    'grid size-10 place-items-center rounded-full text-stone-500 transition hover:bg-stone-200/70 disabled:opacity-30'
-  const go = (delta: number) => setWeekStart(addDays(weekStart, delta))
+    'grid size-8 place-items-center rounded-full text-stone-500 transition hover:bg-stone-100 disabled:opacity-30'
 
   if (usersQuery.isPending) {
     return (
@@ -86,49 +84,27 @@ export function OwnerPage() {
   const usersWithData = new Set((weekDetail.data?.rows ?? []).map((row) => row.userId))
   // Active employees always; deactivated ones only when the window has their hours.
   const visibleEmployees = employees.filter((user) => user.isActive || usersWithData.has(user.id))
-  let grandTotal = 0
-  for (const perDay of matrix.values())
-    for (const cell of perDay.values()) grandTotal += cell.minutes
 
   return (
     <div className="space-y-4">
-      {/* Window navigation */}
-      <div className="flex flex-wrap items-center gap-1">
-        <button onClick={() => go(-7)} className={navButton} aria-label="previous week">
-          <ChevronLeftIcon className="size-5" />
-        </button>
-        <h2 className="min-w-0 flex-1 truncate text-center text-[15px] font-semibold capitalize">
-          {formatRangeLabel(weekStart, weekEnd, lang)}
-        </h2>
-        <button
-          onClick={() => go(7)}
-          disabled={compareDates(weekStart, today) >= 0}
-          className={navButton}
-          aria-label="next week"
-        >
-          <ChevronRightIcon className="size-5" />
-        </button>
-        <button
-          onClick={() => setWeekStart(today)}
-          disabled={weekStart === today}
-          className="h-9 rounded-lg border border-stone-300 bg-white px-3 text-sm font-medium text-stone-700 transition hover:bg-stone-50 disabled:opacity-30"
-        >
-          {t.owner.today}
-        </button>
-        <Button variant="secondary" size="sm" onClick={() => setTotalsOpen(true)}>
-          <DownloadIcon className="size-4" />
-          {t.owner.totalsButton}
-        </Button>
-      </div>
-
-      {/* Timesheet grid */}
       <Card className="!p-0">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-separate border-spacing-0 text-sm">
+          <table className="w-full min-w-[560px] border-separate border-spacing-0 text-sm">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 border-b border-stone-200 bg-white px-3 py-2 text-left text-[11px] font-medium uppercase tracking-wide text-stone-400">
-                  {t.owner.colName}
+                <th className="sticky left-0 z-10 border-b border-r border-stone-100 bg-white py-2 pl-2 pr-3 text-left">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setWeekStart(addDays(weekStart, -7))}
+                      className={navButton}
+                      aria-label="previous week"
+                    >
+                      <ChevronLeftIcon className="size-4" />
+                    </button>
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-stone-400">
+                      {t.owner.colName}
+                    </span>
+                  </div>
                 </th>
                 {days.map((date) => {
                   const parts = formatDayParts(date, lang)
@@ -139,26 +115,41 @@ export function OwnerPage() {
                         {parts.weekday}
                       </span>
                       <span
-                        className={`block text-sm font-semibold tabular-nums ${isTodayColumn ? 'text-brand-700' : 'text-stone-700'}`}
+                        className={`block whitespace-nowrap text-sm font-semibold tabular-nums ${isTodayColumn ? 'text-brand-700' : 'text-stone-700'}`}
                       >
-                        {parts.day}
+                        {parts.day} {parts.month}
                       </span>
                     </th>
                   )
                 })}
-                <th className="border-b border-stone-200 px-3 py-2 text-right text-[11px] font-medium uppercase tracking-wide text-stone-400">
-                  {t.owner.colHours}
+                <th className="w-12 border-b border-stone-200 px-1 py-2">
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      onClick={() => setWeekStart(addDays(weekStart, 7))}
+                      disabled={compareDates(weekStart, today) >= 0}
+                      className={navButton}
+                      aria-label="next week"
+                    >
+                      <ChevronRightIcon className="size-4" />
+                    </button>
+                    {weekStart !== today && (
+                      <button
+                        onClick={() => setWeekStart(today)}
+                        className="text-[11px] font-medium text-brand-700 hover:underline"
+                      >
+                        {t.owner.today}
+                      </button>
+                    )}
+                  </div>
                 </th>
               </tr>
             </thead>
             <tbody>
               {visibleEmployees.map((user) => {
                 const perDay = matrix.get(user.id)
-                let rowTotal = 0
-                if (perDay) for (const cell of perDay.values()) rowTotal += cell.minutes
                 return (
                   <tr key={user.id} className={user.isActive ? '' : 'text-stone-400'}>
-                    <td className="sticky left-0 z-10 max-w-[9rem] truncate border-b border-stone-100 bg-white px-3 py-2 font-medium">
+                    <td className="sticky left-0 z-10 max-w-[9rem] truncate border-b border-r border-stone-100 bg-white px-3 py-2 font-medium">
                       {user.displayName}
                       {!user.isActive && <Badge tone="muted">{t.owner.inactive}</Badge>}
                     </td>
@@ -183,21 +174,19 @@ export function OwnerPage() {
                         </td>
                       )
                     })}
-                    <td className="border-b border-stone-100 px-3 py-2 text-right font-mono text-[13px] font-semibold tabular-nums">
-                      {rowTotal > 0 ? formatDuration(rowTotal) : '—'}
-                    </td>
+                    <td className="border-b border-stone-100" />
                   </tr>
                 )
               })}
             </tbody>
           </table>
         </div>
-        {/* The whole team, at a glance, for the visible week */}
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <span className="text-xs uppercase tracking-wide text-stone-400">{t.owner.allEmployees}</span>
-          <span className="font-mono text-sm font-semibold tabular-nums">
-            {grandTotal > 0 ? formatDuration(grandTotal) : '—'}
-          </span>
+        {/* Period totals for each employee and everyone combined + CSV export */}
+        <div className="px-3 py-2.5">
+          <Button variant="secondary" size="sm" onClick={() => setTotalsOpen(true)}>
+            <DownloadIcon className="size-4" />
+            {t.owner.totalsButton}
+          </Button>
         </div>
       </Card>
       <ErrorNote error={weekDetail.error} />
