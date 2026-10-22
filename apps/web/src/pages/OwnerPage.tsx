@@ -86,7 +86,8 @@ export function OwnerPage() {
 
   return (
     <div className="space-y-4">
-      <Card className="!p-0">
+      {/* overflow-hidden clips the full-bleed table to the card's rounded corners */}
+      <Card className="!p-0 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] border-separate border-spacing-0 text-sm">
             <thead>
