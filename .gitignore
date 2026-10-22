@@ -7,3 +7,6 @@ dist/
 
 # personal deployment/domain plan — kept local, never pushed
 rifugio-nuvolau-domain-plan.md
+
+# tooling artifacts (browser-panel captures)
+.openchamber/
