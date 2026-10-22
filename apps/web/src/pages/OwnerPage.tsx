@@ -8,9 +8,9 @@ import {
 import { useReportDetail, useUsers } from '../api/hooks'
 import { formatDateLabelFull, formatDayParts, romeNow } from '../lib/dateUtils'
 import { useT } from '../i18n/i18n'
-import { TotalsDialog } from '../components/TotalsDialog'
-import { Badge, Button, Card, Dialog, ErrorNote, Spinner } from '../components/ui'
-import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon } from '../components/icons'
+import { TotalsPanel } from '../components/TotalsPanel'
+import { Badge, Card, Dialog, ErrorNote, Spinner } from '../components/ui'
+import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons'
 
 interface DrillTarget {
   userId: string
@@ -21,16 +21,15 @@ interface DrillTarget {
 /**
  * Owner home: a timesheet grid — one row per employee, seven day columns
  * starting at the chosen day (default: today). The table carries its own
- * navigation: ‹ sits in the sticky name header, › (and a Today reset) at the
- * right edge. Clicking a cell opens that employee's entries for the day; the
- * totals dialog computes any pay period and exports the CSVs.
+ * navigation: ‹ sits in the sticky name header, › at the right edge.
+ * Clicking a cell opens that employee's entries for the day; the totals
+ * panel underneath computes any pay period per employee.
  */
 export function OwnerPage() {
   const { t, lang } = useT()
   const usersQuery = useUsers()
   const today = romeNow().date
   const [weekStart, setWeekStart] = useState(today)
-  const [totalsOpen, setTotalsOpen] = useState(false)
   const [drill, setDrill] = useState<DrillTarget | null>(null)
 
   // All hooks run on every render (React rule); the detail query just stays
@@ -123,7 +122,7 @@ export function OwnerPage() {
                   )
                 })}
                 <th className="w-12 border-b border-stone-200 px-1 py-2">
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex justify-center">
                     <button
                       onClick={() => setWeekStart(addDays(weekStart, 7))}
                       disabled={compareDates(weekStart, today) >= 0}
@@ -132,14 +131,6 @@ export function OwnerPage() {
                     >
                       <ChevronRightIcon className="size-4" />
                     </button>
-                    {weekStart !== today && (
-                      <button
-                        onClick={() => setWeekStart(today)}
-                        className="text-[11px] font-medium text-brand-700 hover:underline"
-                      >
-                        {t.owner.today}
-                      </button>
-                    )}
                   </div>
                 </th>
               </tr>
@@ -181,18 +172,14 @@ export function OwnerPage() {
             </tbody>
           </table>
         </div>
-        {/* Period totals for each employee and everyone combined + CSV export */}
-        <div className="px-3 py-2.5">
-          <Button variant="secondary" size="sm" onClick={() => setTotalsOpen(true)}>
-            <DownloadIcon className="size-4" />
-            {t.owner.totalsButton}
-          </Button>
-        </div>
       </Card>
       <ErrorNote error={weekDetail.error} />
       {visibleEmployees.length === 0 && (
         <p className="py-8 text-center text-sm text-stone-400">{t.owner.emptySummary}</p>
       )}
+
+      {/* Totals: any date range, per-employee hours (exports come later) */}
+      <TotalsPanel />
 
       {/* Cell drill-down: that employee's entries for that day (read-only) */}
       <Dialog
@@ -212,8 +199,6 @@ export function OwnerPage() {
           />
         )}
       </Dialog>
-
-      <TotalsDialog open={totalsOpen} users={usersQuery.data.users} onClose={() => setTotalsOpen(false)} />
     </div>
   )
 }

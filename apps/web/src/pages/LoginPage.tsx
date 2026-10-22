@@ -5,7 +5,7 @@ import { useT } from '../i18n/i18n'
 import { Button, Card, ErrorNote, Field, Input } from '../components/ui'
 
 export function LoginPage() {
-  const { t, lang, setLang } = useT()
+  const { t } = useT()
   const me = useMe()
   const login = useLogin()
   const navigate = useNavigate()
@@ -57,14 +57,6 @@ export function LoginPage() {
             </Button>
           </form>
         </Card>
-        <div className="text-center">
-          <button
-            onClick={() => setLang(lang === 'en' ? 'it' : 'en')}
-            className="rounded-lg px-3 py-1.5 text-sm font-medium text-stone-500 hover:bg-stone-200/60"
-          >
-            {lang === 'en' ? 'Italiano' : 'English'}
-          </button>
-        </div>
       </div>
     </div>
   )

@@ -19,7 +19,7 @@ function Logo() {
 }
 
 export function Shell({ user, children }: { user: UserPublic; children: ReactNode }) {
-  const { t, lang, setLang } = useT()
+  const { t } = useT()
   const logout = useLogout()
   const navigate = useNavigate()
   const isOwner = user.role === 'owner'
@@ -42,13 +42,6 @@ export function Shell({ user, children }: { user: UserPublic; children: ReactNod
                 <UserPlusIcon className="size-5" />
               </Link>
             )}
-            <button
-              onClick={() => setLang(lang === 'en' ? 'it' : 'en')}
-              className={`${iconButton} text-xs font-semibold`}
-              title={t.language}
-            >
-              {lang.toUpperCase()}
-            </button>
             <Link to="/settings" className={iconButton} title={t.settings}>
               <GearIcon className="size-5" />
             </Link>
