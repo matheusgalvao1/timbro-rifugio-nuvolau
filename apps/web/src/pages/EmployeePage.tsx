@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from 'react'
 import {
   addDays,
   compareDates,
-  decimalHours,
   entryMinutes,
   formatDuration,
   type TimeEntry,
@@ -21,7 +20,7 @@ import { DayActions } from '../components/DayActions'
 import { EntryDialog } from '../components/EntryDialog'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { useToast } from '../components/Toast'
-import { Badge, Button, Card, ConfirmDialog, ErrorNote, type ConfirmState } from '../components/ui'
+import { Badge, Button, Card, ConfirmDialog, Dialog, ErrorNote, type ConfirmState } from '../components/ui'
 import {
   CalendarIcon,
   ChevronLeftIcon,
@@ -41,15 +40,15 @@ function sumWorkMinutes(entries: TimeEntry[]): number {
 
 /**
  * Employee home: one focused day, swipeable (left = previous day, right =
- * next; today is the rightmost edge). On desktop the month calendar sits
- * beside the day; on mobile it lives behind the calendar icon.
+ * next; today is the rightmost edge). The calendar is only a jump-to-old-days
+ * helper and opens as a popup from the calendar button.
  */
 export function EmployeePage() {
   const { t, lang } = useT()
   const today = romeNow().date
   const [selectedDate, setSelectedDate] = useState(today)
-  const [view, setView] = useState<'day' | 'month'>('day')
   const [browseMonth, setBrowseMonth] = useState(today.slice(0, 7))
+  const [calendarOpen, setCalendarOpen] = useState(false)
   const runningTimer = useRunningTimer()
   const running = runningTimer.data?.entry ?? null
   const deleteEntry = useDeleteEntry()
@@ -94,7 +93,6 @@ export function EmployeePage() {
         .sort((a, b) => a.startTime.localeCompare(b.startTime)),
     [selectedMonthQuery.data, selectedDate],
   )
-  const selectedMonthMinutes = sumWorkMinutes(selectedMonthQuery.data?.entries ?? [])
   const browseMonthMinutes = sumWorkMinutes(browseMonthQuery.data?.entries ?? [])
 
   const navButton =
@@ -102,7 +100,7 @@ export function EmployeePage() {
 
   const openCalendar = () => {
     setBrowseMonth(selectedDate.slice(0, 7))
-    setView('month')
+    setCalendarOpen(true)
   }
 
   const confirmDelete = (entry: TimeEntry) => {
@@ -115,169 +113,76 @@ export function EmployeePage() {
     })
   }
 
-  if (view === 'month') {
-    return (
-      <div className="mx-auto max-w-lg space-y-4">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => setBrowseMonth(shiftMonthKey(browseMonth, -1))}
-            className={navButton}
-            aria-label="previous month"
-          >
-            <ChevronLeftIcon className="size-5" />
-          </button>
-          <h2 className="text-[15px] font-semibold capitalize">{formatMonthLabel(browseMonth, lang)}</h2>
-          <button
-            onClick={() => setBrowseMonth(shiftMonthKey(browseMonth, 1))}
-            className={navButton}
-            aria-label="next month"
-          >
-            <ChevronRightIcon className="size-5" />
-          </button>
-        </div>
-
-        <Card>
-          <MonthCalendar
-            monthKey={browseMonth}
-            lang={lang}
-            today={today}
-            selected={selectedDate}
-            entries={browseMonthQuery.data?.entries ?? []}
-            onPick={(date) => {
-              setSelectedDate(date)
-              setBrowseMonth(date.slice(0, 7))
-              setView('day')
-            }}
-          />
-        </Card>
-
-        <Card className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-stone-400">{t.employee.monthTotal}</p>
-            <p className="font-mono text-2xl font-semibold tabular-nums">{formatDuration(browseMonthMinutes)}</p>
-            <p className="text-xs text-stone-400">
-              {decimalHours(browseMonthMinutes)} {t.employee.decimalHours}
-            </p>
-          </div>
-          <Button variant="secondary" size="sm" onClick={() => setView('day')}>
-            {t.employee.backToDay}
-          </Button>
-        </Card>
-
-        {toast.node}
-        <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
-      </div>
-    )
-  }
-
-  const runningElapsed = running
-    ? Math.max(
-        0,
-        absoluteRomeMinutes(romeNow().date, romeNow().time) -
-          absoluteRomeMinutes(running.workDate, running.startTime),
-      )
-    : 0
-
   return (
-    <>
-      <div className="md:grid md:grid-cols-[minmax(0,1fr)_340px] md:items-start md:gap-4">
-        {/* Day column */}
-        <div className="space-y-4" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-          <div className="flex items-center gap-1">
-            <button onClick={() => go(-1)} className={navButton} aria-label="previous day">
-              <ChevronLeftIcon className="size-5" />
-            </button>
-            <h2 className="min-w-0 flex-1 truncate text-center text-[15px] font-semibold capitalize">
-              {isToday
-                ? `${t.employee.today} · ${formatDayLabel(selectedDate, lang)}`
-                : formatDayLabel(selectedDate, lang)}
-            </h2>
-            <button onClick={() => go(1)} disabled={isToday} className={navButton} aria-label="next day">
-              <ChevronRightIcon className="size-5" />
-            </button>
-            <button
-              onClick={openCalendar}
-              className={`${navButton} md:hidden`}
-              title={t.employee.viewMonth}
-              aria-label={t.employee.viewMonth}
-            >
-              <CalendarIcon className="size-5" />
-            </button>
-          </div>
-
-          {isToday && (
-            <Card>
-              <DayActions running={running} onRegistered={() => toast.show(t.employee.registered)} />
-            </Card>
-          )}
-          {running && runningElapsed > 16 * 60 && (
-            <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-700 ring-1 ring-amber-200">
-              {t.employee.longRunning}
-            </p>
-          )}
-
-          <Card className="!p-0">
-            <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
-              <span className="text-xs uppercase tracking-wide text-stone-400">{t.employee.monthTotal}</span>
-              <span className="font-mono text-sm font-semibold tabular-nums">
-                {formatDuration(sumWorkMinutes(dayEntries))}
-              </span>
-            </div>
-            {selectedMonthQuery.isPending ? (
-              <div className="py-8 text-center text-sm text-stone-400">…</div>
-            ) : dayEntries.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-stone-400">{t.employee.noEntries}</p>
-            ) : (
-              <div className="divide-y divide-stone-100">
-                {dayEntries.map((entry) => (
-                  <EntryRow
-                    key={entry.id}
-                    entry={entry}
-                    isToday={isToday}
-                    onEdit={() => setEntryDialog({ mode: entry })}
-                    onDelete={() => confirmDelete(entry)}
-                  />
-                ))}
-              </div>
-            )}
-            <div className="border-t border-stone-100 p-3">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="w-full"
-                onClick={() => setEntryDialog({ mode: 'create', defaultDate: selectedDate })}
-              >
-                <PlusIcon className="size-4" />
-                {t.employee.addEntry}
-              </Button>
-            </div>
-          </Card>
-          <ErrorNote error={selectedMonthQuery.error} />
-        </div>
-
-        {/* Desktop side calendar */}
-        <aside className="mt-4 hidden space-y-4 md:mt-0 md:block">
-          <Card>
-            <MonthCalendar
-              monthKey={selectedDate.slice(0, 7)}
-              lang={lang}
-              today={today}
-              selected={selectedDate}
-              entries={selectedMonthQuery.data?.entries ?? []}
-              onPick={setSelectedDate}
-            />
-          </Card>
-          <Card>
-            <p className="text-xs uppercase tracking-wide text-stone-400">{t.employee.monthTotal}</p>
-            <p className="font-mono text-2xl font-semibold tabular-nums">
-              {formatDuration(selectedMonthMinutes)}
-            </p>
-            <p className="text-xs text-stone-400">
-              {decimalHours(selectedMonthMinutes)} {t.employee.decimalHours}
-            </p>
-          </Card>
-        </aside>
+    <div className="select-none space-y-4" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      {/* Day navigation */}
+      <div className="flex items-center gap-1">
+        <button onClick={() => go(-1)} className={navButton} aria-label="previous day">
+          <ChevronLeftIcon className="size-5" />
+        </button>
+        <h2 className="min-w-0 flex-1 truncate text-center text-[15px] font-semibold capitalize">
+          {isToday
+            ? `${t.employee.today} · ${formatDayLabel(selectedDate, lang)}`
+            : formatDayLabel(selectedDate, lang)}
+        </h2>
+        <button onClick={() => go(1)} disabled={isToday} className={navButton} aria-label="next day">
+          <ChevronRightIcon className="size-5" />
+        </button>
+        <button onClick={openCalendar} className={navButton} title={t.employee.viewMonth} aria-label={t.employee.viewMonth}>
+          <CalendarIcon className="size-5" />
+        </button>
       </div>
+
+      {/* Quick actions — only meaningful on today's view */}
+      {isToday && (
+        <Card>
+          <DayActions running={running} onRegistered={() => toast.show(t.employee.registered)} />
+        </Card>
+      )}
+      {running && runningElapsed(running) > 16 * 60 && (
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-700 ring-1 ring-amber-200">
+          {t.employee.longRunning}
+        </p>
+      )}
+
+      {/* The day's entries — the source of truth */}
+      <Card className="!p-0">
+        <div className="flex items-center justify-between border-b border-stone-100 px-4 py-3">
+          <span className="text-xs uppercase tracking-wide text-stone-400">{t.employee.monthTotal}</span>
+          <span className="font-mono text-sm font-semibold tabular-nums">
+            {formatDuration(sumWorkMinutes(dayEntries))}
+          </span>
+        </div>
+        {selectedMonthQuery.isPending ? (
+          <div className="py-8 text-center text-sm text-stone-400">…</div>
+        ) : dayEntries.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-stone-400">{t.employee.noEntries}</p>
+        ) : (
+          <div className="divide-y divide-stone-100">
+            {dayEntries.map((entry) => (
+              <EntryRow
+                key={entry.id}
+                entry={entry}
+                isToday={isToday}
+                onEdit={() => setEntryDialog({ mode: entry })}
+                onDelete={() => confirmDelete(entry)}
+              />
+            ))}
+          </div>
+        )}
+        <div className="border-t border-stone-100 p-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="w-full"
+            onClick={() => setEntryDialog({ mode: 'create', defaultDate: selectedDate })}
+          >
+            <PlusIcon className="size-4" />
+            {t.employee.addEntry}
+          </Button>
+        </div>
+      </Card>
+      <ErrorNote error={selectedMonthQuery.error} />
 
       {entryDialog && (
         <EntryDialog
@@ -289,9 +194,55 @@ export function EmployeePage() {
           onClose={() => setEntryDialog(null)}
         />
       )}
+
+      {/* Calendar popup — navigate to old days */}
+      <Dialog open={calendarOpen} onClose={() => setCalendarOpen(false)} title={t.employee.viewMonth}>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setBrowseMonth(shiftMonthKey(browseMonth, -1))}
+              className={navButton}
+              aria-label="previous month"
+            >
+              <ChevronLeftIcon className="size-4" />
+            </button>
+            <span className="text-sm font-semibold capitalize">{formatMonthLabel(browseMonth, lang)}</span>
+            <button
+              onClick={() => setBrowseMonth(shiftMonthKey(browseMonth, 1))}
+              className={navButton}
+              aria-label="next month"
+            >
+              <ChevronRightIcon className="size-4" />
+            </button>
+          </div>
+          <MonthCalendar
+            monthKey={browseMonth}
+            lang={lang}
+            today={today}
+            selected={selectedDate}
+            entries={browseMonthQuery.data?.entries ?? []}
+            onPick={(date) => {
+              setSelectedDate(date)
+              setCalendarOpen(false)
+            }}
+          />
+          <p className="text-center text-xs text-stone-400">
+            {t.employee.monthTotal} · {formatDuration(browseMonthMinutes)}
+          </p>
+        </div>
+      </Dialog>
+
       {toast.node}
       <ConfirmDialog state={confirm} onClose={() => setConfirm(null)} />
-    </>
+    </div>
+  )
+}
+
+function runningElapsed(running: TimeEntry): number {
+  const now = romeNow()
+  return Math.max(
+    0,
+    absoluteRomeMinutes(now.date, now.time) - absoluteRomeMinutes(running.workDate, running.startTime),
   )
 }
 

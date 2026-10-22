@@ -54,7 +54,6 @@ export const en = {
     deleteEntryBody: 'They will be removed from the day total.',
     noEntries: 'Nothing logged for this day.',
     monthTotal: 'Total',
-    decimalHours: 'decimal hours',
     today: 'Today',
     yesterday: 'Yesterday',
     start: 'Start',
@@ -69,7 +68,6 @@ export const en = {
     entryType: 'Type',
     workBadge: 'Work',
     viewMonth: 'Calendar',
-    backToDay: 'Back to day',
     registered: 'Registered',
   },
 
@@ -175,7 +173,6 @@ export const it: Dictionary = {
     deleteEntryBody: 'Verranno rimosse dal totale del giorno.',
     noEntries: 'Niente registrato per questo giorno.',
     monthTotal: 'Totale',
-    decimalHours: 'ore decimali',
     today: 'Oggi',
     yesterday: 'Ieri',
     start: 'Inizio',
@@ -190,7 +187,6 @@ export const it: Dictionary = {
     entryType: 'Tipo',
     workBadge: 'Lavoro',
     viewMonth: 'Calendario',
-    backToDay: 'Torna al giorno',
     registered: 'Registrato',
   },
 
