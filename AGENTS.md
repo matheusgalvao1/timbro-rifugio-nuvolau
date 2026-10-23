@@ -115,6 +115,8 @@ accents and `’`.
   midnight with `FUTURE_TIME`, which once looked like an API bug but wasn't.
 - `grid-cols-[a,b]` is invalid CSS — Tailwind arbitrary track lists need an
   underscore for the space: `grid-cols-[420px_minmax(0,1fr)]`.
-- GitHub repo is private; keep it that way. Never commit `apps/api/.dev.vars`,
+- The repo is public. Never commit `apps/api/.dev.vars`,
   `rifugio-nuvolau-domain-plan.md` (personal deployment plan, intentionally local),
   or `.openchamber/` (tooling captures) — all gitignored, keep them that way.
+  Screenshots and fixture data must use placeholder names only (real employee
+  names must never enter the repo).
